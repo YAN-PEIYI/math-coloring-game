@@ -8,12 +8,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
-            /* 活潑繽紛的新色系 */
-            --primary: #FF6B6B;       /* 活力珊瑚紅 */
-            --primary-hover: #FF8E53; /* 溫暖橘色 */
-            --secondary: #4ECDC4;     /* 薄荷綠 (用於步驟與亮點) */
-            --accent: #FFE66D;        /* 歡樂黃色 */
-            --card-bg: rgba(255, 255, 255, 0.95); /* 微透玻璃感 */
+            /* 活潑繽紛的色系 */
+            --primary: #FF6B6B;       
+            --primary-hover: #FF8E53; 
+            --secondary: #4ECDC4;     
+            --accent: #FFE66D;        
+            --card-bg: rgba(255, 255, 255, 0.95); 
             --text-dark: #2D3142;
             --text-muted: #79809E;
             --border-color: #E2E8F0;
@@ -23,17 +23,23 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, '微軟正黑體', 'PingFang TC';
-            /* 童趣粉嫩漸層背景 */
-            background: linear-gradient(135deg, #FFE2E2 0%, #E6F9FF 50%, #E8E2FF 100%);
-            background-attachment: fixed;
             color: var(--text-dark);
             margin: 0;
             padding: 0;
             line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* 【修正 1】將背景獨立出來，解決手機版背景固定導致無法滑動的 Bug */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(135deg, #FFE2E2 0%, #E6F9FF 50%, #E8E2FF 100%);
+            z-index: -1;
         }
 
         .header {
-            /* 搶眼的珊瑚橘紅漸層標題列 */
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
             padding: 25px 40px;
             box-shadow: 0 6px 20px rgba(255, 107, 107, 0.25);
@@ -55,7 +61,7 @@
             display: inline-block;
             width: 8px;
             height: 26px;
-            background-color: var(--accent); /* 亮黃色點綴 */
+            background-color: var(--accent); 
             border-radius: 4px;
             box-shadow: 0 2px 6px rgba(255, 230, 109, 0.5);
         }
@@ -114,7 +120,6 @@
             color: var(--text-dark);
         }
         .step-badge {
-            /* 薄荷綠漸層標籤 */
             background: linear-gradient(135deg, var(--secondary) 0%, #2AB7CA 100%);
             color: white;
             width: 32px;
@@ -176,7 +181,6 @@
             transform: translateY(-1px);
         }
         .toggle-btn.active {
-            /* 激活狀態使用耀眼的漸層 */
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
             border-color: transparent;
             color: white;
@@ -211,7 +215,6 @@
         }
         
         .download-btn {
-            /* 清爽閃亮的漸層藍色按鈕 */
             background: linear-gradient(135deg, #4FACFE 0%, #00F2FE 100%);
             color: white;
             border: none;
@@ -260,10 +263,13 @@
         .legend-item { display: flex; align-items: center; gap: 10px; font-size: 15px; }
         .swatch { width: 28px; height: 28px; border: 2px solid rgba(0,0,0,0.1); border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 
+        /* 【修正 2】加上拉條 (overflow)，確保畫布太大時可以滑動查看 */
         .canvas-container {
             width: 100%;
-            display: flex;
-            justify-content: center;
+            display: block;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch; /* 讓 iOS 上的滑動更平滑 */
+            padding-bottom: 10px;
         }
         canvas {
             border: 3px solid #1a2035;
@@ -271,13 +277,31 @@
             max-width: 100%;
             height: auto;
             box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+            display: block;
+            margin: 0 auto;
         }
 
+        /* 針對手機版的特殊處理 */
         @media (max-width: 768px) {
             .app-container { flex-direction: column; }
             .left-panel, .right-panel { width: 100%; max-width: 100%; }
-            .paper-preview { padding: 20px; }
             .header { border-radius: 0 0 20px 20px; padding: 20px; }
+            
+            .paper-preview { 
+                padding: 20px; 
+                aspect-ratio: auto; /* 取消紙張的比例強制，避免高度被截斷 */
+            }
+
+            /* 【修正 2】在手機版強制畫布有最低寬度，並讓外框支援滾動，避免字變太小 */
+            .canvas-container {
+                max-height: 60vh; /* 避免預覽區太高，讓使用者無法繼續往下滑整個網頁 */
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+            }
+            canvas {
+                min-width: 600px; /* 強制不縮小，以便於在手機上查看細節 */
+                max-width: none;
+            }
         }
     </style>
 </head>
@@ -387,14 +411,15 @@
                     <!-- 圖例由 JS 產生 -->
                 </div>
 
+                <!-- 畫布容器 (手機版會出現內部拉條) -->
                 <div class="canvas-container">
                     <canvas id="mainCanvas"></canvas>
                 </div>
             </div>
             
             <p style="text-align: center; color: var(--text-muted); font-size: 13px; margin-top: 15px; font-weight: 600;">
-                * 預覽圖僅供參考，下載的 PDF 會是清晰的高畫質 A4 尺寸。<br>
-                * Preview only. The downloaded PDF will be high-quality A4.
+                * 手機版可直接滑動上方預覽區查看細節 (You can scroll the preview area on mobile).<br>
+                * 下載的 PDF 會是清晰的高畫質 A4 尺寸 (Downloaded PDF will be high-quality A4).
             </p>
         </div>
     </div>
@@ -646,10 +671,11 @@
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(0, 0, c.width, c.height);
                 
-                // 標題區域
+                // 標題區域 (雙語縮小字體以防超出邊界)
                 ctx.fillStyle = '#333333';
+                // 加入支援繁體中文的通用字型族 (Windows, Mac 皆可正常渲染)
                 ctx.font = 'bold 44px "Microsoft JhengHei", "PingFang TC", sans-serif';
-                ctx.fillText(isAnswer ? '解答 | Answer' : '神秘像素塗鴉 | Mystery Pixel Art', 80, 110);
+                ctx.fillText(isAnswer ? '神秘塗鴉 (解答) | Mystery Pixel Art (Answer)' : '神秘塗鴉 | Mystery Pixel Art', 80, 110);
                 
                 ctx.font = '24px "Microsoft JhengHei", "PingFang TC", sans-serif';
                 ctx.fillStyle = '#666666';

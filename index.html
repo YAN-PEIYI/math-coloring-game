@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>神秘像素大解謎 | Mystery Pixel Art</title>
+    <!-- 引入 jsPDF 用於產生 PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            /* 活潑繽紛的新色系 */
+            --primary: #FF6B6B;       /* 活力珊瑚紅 */
+            --primary-hover: #FF8E53; /* 溫暖橘色 */
+            --secondary: #4ECDC4;     /* 薄荷綠 (用於步驟與亮點) */
+            --accent: #FFE66D;        /* 歡樂黃色 */
+            --card-bg: rgba(255, 255, 255, 0.95); /* 微透玻璃感 */
+            --text-dark: #2D3142;
+            --text-muted: #79809E;
+            --border-color: #E2E8F0;
+            --shadow-sm: 0 4px 15px rgba(0,0,0,0.05);
+            --shadow-lg: 0 12px 35px rgba(0,0,0,0.08);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, '微軟正黑體', 'PingFang TC';
+            /* 童趣粉嫩漸層背景 */
+            background: linear-gradient(135deg, #FFE2E2 0%, #E6F9FF 50%, #E8E2FF 100%);
+            background-attachment: fixed;
+            color: var(--text-dark);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        .header {
+            /* 搶眼的珊瑚橘紅漸層標題列 */
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+            padding: 25px 40px;
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.25);
+            margin-bottom: 40px;
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 26px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-shadow: 1px 2px 4px rgba(0,0,0,0.1);
+        }
+        .header h1::before {
+            content: "";
+            display: inline-block;
+            width: 8px;
+            height: 26px;
+            background-color: var(--accent); /* 亮黃色點綴 */
+            border-radius: 4px;
+            box-shadow: 0 2px 6px rgba(255, 230, 109, 0.5);
+        }
+        .header p {
+            margin: 6px 0 0 20px;
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px 50px;
+            display: flex;
+            gap: 35px;
+            flex-wrap: wrap;
+        }
+
+        .left-panel {
+            flex: 1;
+            min-width: 340px;
+            max-width: 420px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .right-panel {
+            flex: 2;
+            min-width: 320px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 24px;
+            border: 2px solid rgba(255,255,255,0.5);
+            padding: 30px;
+            box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px dashed #E2E8F0;
+            color: var(--text-dark);
+        }
+        .step-badge {
+            /* 薄荷綠漸層標籤 */
+            background: linear-gradient(135deg, var(--secondary) 0%, #2AB7CA 100%);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(78, 205, 196, 0.4);
+        }
+
+        .control-group { margin-bottom: 25px; }
+        .control-group h4 { margin: 0 0 15px 0; font-size: 16px; color: var(--text-dark); font-weight: 700;}
+        
+        .upload-area {
+            display: block; 
+            box-sizing: border-box;
+            width: 100%;
+            border: 3px dashed #FFB7B2;
+            border-radius: 16px;
+            padding: 35px 20px;
+            text-align: center;
+            cursor: pointer;
+            background-color: #FFF9F9;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .upload-area:hover { 
+            border-color: var(--primary); 
+            background-color: #FFF0F0; 
+            transform: scale(1.02);
+            box-shadow: 0 8px 20px rgba(255, 107, 107, 0.15);
+        }
+        .upload-area input { display: none; }
+        .upload-hint { font-size: 13px; color: var(--text-muted); margin-top: 12px; line-height: 1.6; }
+
+        .slider-wrapper { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        input[type="range"] { flex-grow: 1; accent-color: var(--secondary); height: 6px; border-radius: 3px;}
+        .slider-val { font-weight: bold; font-size: 16px; color: var(--secondary); min-width: 60px; text-align: right; }
+
+        .toggle-group { display: flex; flex-wrap: wrap; gap: 10px; }
+        .toggle-btn {
+            background: #F1F5F9;
+            border: 2px solid transparent;
+            padding: 10px 18px;
+            border-radius: 25px;
+            font-size: 14px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-weight: 600;
+            transition: all 0.25s ease;
+        }
+        .toggle-btn:hover { 
+            background: white;
+            border-color: #FFB7B2; 
+            color: var(--primary); 
+            transform: translateY(-1px);
+        }
+        .toggle-btn.active {
+            /* 激活狀態使用耀眼的漸層 */
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+            border-color: transparent;
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .tab-group { display: flex; gap: 8px; }
+        .tab-btn {
+            background: white;
+            border: 2px solid var(--border-color);
+            padding: 8px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            color: var(--text-muted);
+            font-size: 15px;
+            transition: 0.3s;
+        }
+        .tab-btn.active { 
+            background: var(--text-dark); 
+            color: white; 
+            border-color: var(--text-dark); 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        
+        .download-btn {
+            /* 清爽閃亮的漸層藍色按鈕 */
+            background: linear-gradient(135deg, #4FACFE 0%, #00F2FE 100%);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 6px 20px rgba(0, 242, 254, 0.4);
+        }
+        .download-btn:hover { 
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 242, 254, 0.5);
+            background: linear-gradient(135deg, #5AD1FF 0%, #1AE0FF 100%);
+        }
+
+        .paper-preview {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            border: 1px solid rgba(255,255,255,0.8);
+            aspect-ratio: 1 / 1.414;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .paper-header { display: flex; justify-content: space-between; margin-bottom: 25px; }
+        .paper-title { font-size: 26px; margin: 0; color: #333; font-weight: 800;}
+        .paper-subtitle { font-size: 14px; color: #666; margin-top: 6px; line-height: 1.5; }
+        .paper-name { font-size: 16px; border-bottom: 2px solid #333; padding-bottom: 2px; height: 24px; font-weight: 600;}
+
+        .legend-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding: 18px;
+            background: #F8FAFC;
+            border-radius: 12px;
+            border: 2px dashed #E2E8F0;
+        }
+        .legend-item { display: flex; align-items: center; gap: 10px; font-size: 15px; }
+        .swatch { width: 28px; height: 28px; border: 2px solid rgba(0,0,0,0.1); border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
+        .canvas-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+        canvas {
+            border: 3px solid #1a2035;
+            border-radius: 4px;
+            max-width: 100%;
+            height: auto;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+        }
+
+        @media (max-width: 768px) {
+            .app-container { flex-direction: column; }
+            .left-panel, .right-panel { width: 100%; max-width: 100%; }
+            .paper-preview { padding: 20px; }
+            .header { border-radius: 0 0 20px 20px; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>✨ 神秘像素塗鴉 <span style="color: rgba(255,255,255,0.8); font-size: 18px; font-weight: normal; margin-left: 8px;">| Pixel Art Math Puzzle</span></h1>
+        <p>把孩子喜歡的角色，變成一場繽紛的算數冒險！ | Turn Your Child’s Favorite Characters into a Math Adventure!</p>
+    </div>
+
+    <div class="app-container">
+        <!-- 左側設定欄 -->
+        <div class="left-panel">
+            <div class="card">
+                <div class="step-header">
+                    <span class="step-badge">1</span> 選一張圖 | Choose an Image
+                </div>
+                <label class="upload-area">
+                    <input type="file" id="imageInput" accept="image/*">
+                    <div style="font-size: 40px; margin-bottom: 5px;">🎨📁</div>
+                    <div style="font-weight: 800; font-size: 18px; color: var(--text-dark);">點這裡選擇 JPG 或 PNG<br><span style="font-size: 14px; font-weight: 600; color: var(--text-muted);">Click here to select JPG or PNG</span></div>
+                    <div class="upload-hint">圖片只在這個瀏覽器裡處理，不會上傳。輪廓簡單、顏色分明的圖效果最好！<br>Images are processed locally. Simple, clear images work best!</div>
+                </label>
+            </div>
+
+            <div class="card">
+                <div class="step-header">
+                    <span class="step-badge">2</span> 調整設定 | Adjust Settings
+                </div>
+                
+                <div class="control-group">
+                    <h4>圖案細緻度 | Grid Size</h4>
+                    <div class="slider-wrapper">
+                        <span style="font-size: 13px; font-weight: 600; color: var(--text-muted); white-space: nowrap;">簡單<br>Simple</span>
+                        <input type="range" id="gridSlider" min="10" max="30" value="20" step="1">
+                        <span class="slider-val" id="gridVal">20 x 20</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h4>色彩單純化 | Color Simplification</h4>
+                    <div class="slider-wrapper">
+                        <span style="font-size: 13px; font-weight: 600; color: var(--text-muted); white-space: nowrap;">保留細節<br>Detail</span>
+                        <input type="range" id="toleranceSlider" min="1" max="10" value="5" step="1">
+                        <span class="slider-val" id="toleranceVal" style="opacity: 0;">5</span> 
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h4>目標顏色數量 | Number of Colors</h4>
+                    <div class="toggle-group" id="colors-group">
+                        <button class="toggle-btn" data-val="4">4 色 | Colors</button>
+                        <button class="toggle-btn" data-val="5">5 色 | Colors</button>
+                        <button class="toggle-btn active" data-val="6">6 色 | Colors</button>
+                        <button class="toggle-btn" data-val="8">8 色 | Colors</button>
+                        <button class="toggle-btn" data-val="10">10 色 | Colors</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h4>算式範圍 | Math Range</h4>
+                    <div class="toggle-group" id="range-group">
+                        <button class="toggle-btn" data-val="10">10 以內 | ≤ 10</button>
+                        <button class="toggle-btn active" data-val="20">20 以內 | ≤ 20</button>
+                        <button class="toggle-btn" data-val="50">50 以內 | ≤ 50</button>
+                        <button class="toggle-btn" data-val="100">100 以內 | ≤ 100</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h4>運算 | Operations</h4>
+                    <div class="toggle-group" id="op-group">
+                        <button class="toggle-btn" data-val="add">加法 | Addition</button>
+                        <button class="toggle-btn" data-val="sub">減法 | Subtraction</button>
+                        <button class="toggle-btn active" data-val="mix">加減混合 | Mixed</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右側預覽欄 -->
+        <div class="right-panel">
+            <div class="preview-header">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div class="step-header" style="border: none; padding: 0; margin: 0;">
+                        <span class="step-badge">3</span> 預覽並下載 | Preview & Download
+                    </div>
+                    <div class="tab-group">
+                        <button class="tab-btn active" onclick="switchTab('question')">題目頁 | Question</button>
+                        <button class="tab-btn" onclick="switchTab('answer')">解答頁 | Answer</button>
+                    </div>
+                </div>
+                <button class="download-btn" onclick="generatePDF()">⬇️ 下載 PDF | Download PDF</button>
+            </div>
+
+            <!-- A4 預覽區塊 -->
+            <div class="card paper-preview" id="paperContainer">
+                <div class="paper-header">
+                    <div>
+                        <h2 class="paper-title">神秘像素大解謎 | Mystery Pixel Art</h2>
+                        <div class="paper-subtitle">算出答案，對照色表塗上顏色，看看會出現什麼圖案！<br>Solve the math, color by number, and reveal the hidden picture!</div>
+                    </div>
+                    <div class="paper-name">姓名 Name：__________</div>
+                </div>
+                
+                <div class="legend-container" id="legend">
+                    <!-- 圖例由 JS 產生 -->
+                </div>
+
+                <div class="canvas-container">
+                    <canvas id="mainCanvas"></canvas>
+                </div>
+            </div>
+            
+            <p style="text-align: center; color: var(--text-muted); font-size: 13px; margin-top: 15px; font-weight: 600;">
+                * 預覽圖僅供參考，下載的 PDF 會是清晰的高畫質 A4 尺寸。<br>
+                * Preview only. The downloaded PDF will be high-quality A4.
+            </p>
+        </div>
+    </div>
+
+    <!-- JS 邏輯完全保留不變 -->
+    <script>
+        let img = new Image();
+        let currentTab = 'question';
+        let generatedData = null; 
+        let isImageLoaded = false;
+
+        let config = {
+            gridSize: 20,
+            tolerance: 5, 
+            colors: 6,
+            range: 20,
+            operation: 'mix'
+        };
+
+        // UI 事件綁定
+        document.getElementById('gridSlider').addEventListener('input', (e) => {
+            document.getElementById('gridVal').innerText = `${e.target.value} x ${e.target.value}`;
+            config.gridSize = parseInt(e.target.value);
+            if(isImageLoaded) processImage();
+        });
+
+        document.getElementById('toleranceSlider').addEventListener('input', (e) => {
+            config.tolerance = parseInt(e.target.value);
+            if(isImageLoaded) processImage();
+        });
+
+        document.querySelectorAll('.toggle-group').forEach(group => {
+            group.addEventListener('click', (e) => {
+                if (e.target.classList.contains('toggle-btn')) {
+                    Array.from(group.children).forEach(btn => btn.classList.remove('active'));
+                    e.target.classList.add('active');
+                    let val = e.target.getAttribute('data-val');
+                    
+                    if (group.id === 'colors-group') config.colors = parseInt(val);
+                    if (group.id === 'range-group') config.range = parseInt(val);
+                    if (group.id === 'op-group') config.operation = val;
+                    
+                    if(isImageLoaded) processImage();
+                }
+            });
+        });
+
+        // 圖片上傳
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        isImageLoaded = true;
+                        processImage();
+                    }
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // 切換分頁
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderCanvas();
+        }
+
+        // 核心影像處理
+        function processImage() {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = img.width;
+            tempCanvas.height = img.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(img, 0, 0);
+            const imgData = tempCtx.getImageData(0, 0, img.width, img.height).data;
+
+            let blockW = img.width / config.gridSize;
+            let blockH = img.height / config.gridSize;
+            let allGridPixels = [];
+            let colorFreqMap = {}; 
+
+            for (let y = 0; y < config.gridSize; y++) {
+                for (let x = 0; x < config.gridSize; x++) {
+                    let cx = Math.floor(x * blockW + blockW / 2);
+                    let cy = Math.floor(y * blockH + blockH / 2);
+                    let idx = (cy * img.width + cx) * 4;
+                    
+                    let r = imgData[idx], g = imgData[idx+1], b = imgData[idx+2], a = imgData[idx+3];
+                    
+                    let quantFactor = config.tolerance * 10; 
+                    let qr = Math.round(r / quantFactor) * quantFactor;
+                    let qg = Math.round(g / quantFactor) * quantFactor;
+                    let qb = Math.round(b / quantFactor) * quantFactor;
+                    qr = Math.min(255, qr); qg = Math.min(255, qg); qb = Math.min(255, qb);
+
+                    let isBg = (a < 128); 
+                    let hex = rgbToHex(qr, qg, qb);
+                    
+                    allGridPixels.push({r:qr, g:qg, b:qb, hex: hex, isBg: isBg});
+                    if (!isBg) colorFreqMap[hex] = (colorFreqMap[hex] || 0) + 1;
+                }
+            }
+
+            let sortedColors = Object.entries(colorFreqMap)
+                .sort((a, b) => b[1] - a[1])
+                .map(entry => { return { hex: entry[0], rgb: hexToRgb(entry[0]) } });
+
+            let palette = [];
+            let distanceThreshold = 1500 - (config.tolerance * 100); 
+
+            for (let i = 0; i < sortedColors.length; i++) {
+                if (palette.length >= config.colors) break;
+                let candidate = sortedColors[i];
+                let isDistinct = true;
+                for (let p of palette) {
+                    if (colorDistance(candidate.rgb, p.rgb) < distanceThreshold) {
+                        isDistinct = false; break;
+                    }
+                }
+                if (isDistinct || palette.length === 0) palette.push(candidate);
+            }
+
+            while(palette.length < config.colors && sortedColors.length > palette.length) {
+                let nextColor = sortedColors.find(c => !palette.includes(c));
+                if(nextColor) palette.push(nextColor);
+            }
+
+            let colorToMathAnswer = {};
+            let usedAnswers = new Set();
+            palette.forEach(color => {
+                let ans;
+                do { ans = Math.floor(Math.random() * (config.range - 1)) + 2; } while (usedAnswers.has(ans));
+                usedAnswers.add(ans);
+                colorToMathAnswer[color.hex] = ans;
+            });
+
+            generatedData = {
+                gridSize: config.gridSize,
+                pixels: allGridPixels,
+                palette: palette,
+                colorMap: colorToMathAnswer,
+                mathGrid: []
+            };
+
+            allGridPixels.forEach(pixel => {
+                if(pixel.isBg) {
+                    generatedData.mathGrid.push({ isBg: true });
+                } else {
+                    let closestColor = palette[0];
+                    let minDist = Infinity;
+                    palette.forEach(c => {
+                        let d = colorDistance(pixel, c.rgb);
+                        if (d < minDist) { minDist = d; closestColor = c; }
+                    });
+                    let targetAns = colorToMathAnswer[closestColor.hex];
+                    let eq = generateMathEquation(targetAns, config.range, config.operation);
+                    generatedData.mathGrid.push({ isBg: false, color: closestColor.hex, text: eq });
+                }
+            });
+
+            updateLegend();
+            renderCanvas();
+        }
+
+        // 雙語版網頁預覽圖例
+        function updateLegend() {
+            const legendDiv = document.getElementById('legend');
+            legendDiv.innerHTML = '';
+            generatedData.palette.forEach(color => {
+                let ans = generatedData.colorMap[color.hex];
+                legendDiv.innerHTML += `
+                    <div class="legend-item">
+                        <div class="swatch" style="background-color: ${color.hex};"></div>
+                        <span style="font-weight: 800; color: #1a2035;">答案 Ans: ${ans}</span>
+                    </div>
+                `;
+            });
+        }
+
+        function renderCanvas() {
+            if(!generatedData) return;
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            const cellSize = 40; 
+            canvas.width = generatedData.gridSize * cellSize;
+            canvas.height = generatedData.gridSize * cellSize;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let fontSize = Math.max(12, Math.floor(cellSize * 0.4));
+            ctx.font = `bold ${fontSize}px 'Segoe UI', Arial`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            let i = 0;
+            for (let y = 0; y < generatedData.gridSize; y++) {
+                for (let x = 0; x < generatedData.gridSize; x++) {
+                    let cell = generatedData.mathGrid[i++];
+                    let px = x * cellSize;
+                    let py = y * cellSize;
+
+                    if (currentTab === 'answer') {
+                        if (cell.isBg) {
+                            ctx.fillStyle = "#ffffff";
+                            ctx.fillRect(px, py, cellSize, cellSize);
+                        } else {
+                            ctx.fillStyle = cell.color;
+                            ctx.fillRect(px, py, cellSize, cellSize);
+                        }
+                        ctx.strokeStyle = "rgba(0,0,0,0.1)";
+                        ctx.strokeRect(px, py, cellSize, cellSize);
+                    } else {
+                        ctx.fillStyle = "#ffffff";
+                        ctx.fillRect(px, py, cellSize, cellSize);
+                        ctx.strokeStyle = "#999999";
+                        ctx.strokeRect(px, py, cellSize, cellSize);
+                        
+                        if (!cell.isBg) {
+                            ctx.fillStyle = "#1a2035";
+                            ctx.fillText(cell.text, px + cellSize/2, py + cellSize/2);
+                        }
+                    }
+                }
+            }
+        }
+
+        // 雙語版 PDF 產生器
+        function generatePDF() {
+            if (!generatedData) {
+                alert("請先上傳圖片產生圖案！ \nPlease upload an image first!");
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4'); 
+            
+            function createPageImage(isAnswer) {
+                const c = document.createElement('canvas');
+                // 150 DPI A4 解析度
+                c.width = 1240; 
+                c.height = 1754; 
+                const ctx = c.getContext('2d');
+                
+                // 白底
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, c.width, c.height);
+                
+                // 標題區域
+                ctx.fillStyle = '#333333';
+                ctx.font = 'bold 44px "Microsoft JhengHei", "PingFang TC", sans-serif';
+                ctx.fillText(isAnswer ? '解答 | Answer' : '神秘像素塗鴉 | Mystery Pixel Art', 80, 110);
+                
+                ctx.font = '24px "Microsoft JhengHei", "PingFang TC", sans-serif';
+                ctx.fillStyle = '#666666';
+                ctx.fillText('算出答案，對照色表塗上顏色，看看會出現什麼圖案！', 80, 160);
+                ctx.fillText('Solve the math, color by number, and reveal the hidden picture!', 80, 195);
+                
+                ctx.textAlign = 'right';
+                ctx.fillStyle = '#333333';
+                ctx.fillText('姓名 Name：___________________', 1160, 110);
+                ctx.textAlign = 'left';
+
+                // 雙語圖例
+                let legendStartX = 80;
+                let legendStartY = 260;
+                let xSpacing = 220; 
+                let ySpacing = 70;  
+
+                ctx.font = '24px "Microsoft JhengHei", "PingFang TC", sans-serif';
+                generatedData.palette.forEach((color, idx) => {
+                    let row = Math.floor(idx / 5); 
+                    let col = idx % 5;
+                    let currentX = legendStartX + col * xSpacing;
+                    let currentY = legendStartY + row * ySpacing;
+
+                    let ans = generatedData.colorMap[color.hex];
+                    
+                    // 畫顏色方塊
+                    ctx.fillStyle = color.hex;
+                    ctx.fillRect(currentX, currentY - 26, 40, 40);
+                    ctx.strokeStyle = '#cccccc';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(currentX, currentY - 26, 40, 40);
+
+                    // 畫雙語文字
+                    ctx.fillStyle = '#333333';
+                    ctx.textAlign = 'left';
+                    ctx.fillText(`答案 Ans: ${ans}`, currentX + 55, currentY + 4);
+                });
+
+                // 繪製完成圖 (固定 20x20 公分 = 1181 像素)
+                const gridPixelSize = 1181; 
+                const startX = Math.round((c.width - gridPixelSize) / 2); 
+                const startY = 460; 
+
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                
+                const exactCellSize = gridPixelSize / generatedData.gridSize;
+                ctx.font = `bold ${Math.max(16, Math.floor(exactCellSize * 0.45))}px Arial`;
+
+                let i = 0;
+                for (let y = 0; y < generatedData.gridSize; y++) {
+                    for (let x = 0; x < generatedData.gridSize; x++) {
+                        let cell = generatedData.mathGrid[i++];
+                        
+                        let px1 = startX + Math.round(x * exactCellSize);
+                        let py1 = startY + Math.round(y * exactCellSize);
+                        let px2 = startX + Math.round((x + 1) * exactCellSize);
+                        let py2 = startY + Math.round((y + 1) * exactCellSize);
+
+                        let w = px2 - px1;
+                        let h = py2 - py1;
+
+                        if (isAnswer) {
+                            if (cell.isBg) {
+                                ctx.fillStyle = "#ffffff";
+                            } else {
+                                ctx.fillStyle = cell.color;
+                            }
+                            ctx.fillRect(px1, py1, w, h);
+                            ctx.strokeStyle = "rgba(0,0,0,0.1)";
+                            ctx.lineWidth = 1;
+                            ctx.strokeRect(px1, py1, w, h);
+                        } else {
+                            ctx.fillStyle = "#ffffff";
+                            ctx.fillRect(px1, py1, w, h);
+                            ctx.strokeStyle = "#999999";
+                            ctx.lineWidth = 2; 
+                            ctx.strokeRect(px1, py1, w, h);
+                            
+                            if (!cell.isBg) {
+                                ctx.fillStyle = "#1a2035";
+                                ctx.fillText(cell.text, px1 + w / 2, py1 + h / 2);
+                            }
+                        }
+                    }
+                }
+                return c.toDataURL('image/jpeg', 0.85);
+            }
+
+            const imgDataQ = createPageImage(false);
+            pdf.addImage(imgDataQ, 'JPEG', 0, 0, 210, 297);
+            
+            pdf.addPage();
+            const imgDataA = createPageImage(true);
+            pdf.addImage(imgDataA, 'JPEG', 0, 0, 210, 297);
+
+            pdf.save("密碼塗鴉工坊_Bilingual_Math_Coloring.pdf");
+        }
+
+        function generateMathEquation(ans, range, operation) {
+            let op = operation;
+            if (op === 'mix') op = Math.random() > 0.5 ? 'add' : 'sub';
+            if (op === 'add') {
+                let a = Math.floor(Math.random() * (ans + 1));
+                return `${a}+${ans - a}`;
+            } else {
+                let maxB = range - ans;
+                if (maxB < 0) maxB = 0;
+                let b = Math.floor(Math.random() * (maxB + 1));
+                return `${ans + b}-${b}`;
+            }
+        }
+        function colorDistance(c1, c2) { return 2 * Math.pow(c1.r - c2.r, 2) + 4 * Math.pow(c1.g - c2.g, 2) + 3 * Math.pow(c1.b - c2.b, 2); }
+        function rgbToHex(r, g, b) { return "#" + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1); }
+        function hexToRgb(hex) {
+            var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
+        }
+    </script>
+</body>
+</html>
